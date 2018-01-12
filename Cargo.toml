@@ -1,0 +1,12 @@
+[package]
+name = "osmo"
+description = "On-Screen Mini Osmo"
+version = "0.1.0"
+authors = ["Jaakko Pallari <jkpl@lepo.group>"]
+
+[dependencies]
+gtk = "0.3.0"
+gdk = "0.7.0"
+
+[features]
+default = ["gtk/v3_22"]
