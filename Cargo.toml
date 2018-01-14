@@ -7,6 +7,9 @@ authors = ["Jaakko Pallari <jkpl@lepo.group>"]
 [dependencies]
 gtk = "0.3.0"
 gdk = "0.7.0"
+pango = "0.3.0"
+cairo-rs = "0.3.0"
+chrono = "0.4"
 
 [features]
 default = ["gtk/v3_22"]
