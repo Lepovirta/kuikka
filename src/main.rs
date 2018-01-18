@@ -8,14 +8,14 @@ use gtk::prelude::*;
 use gdk::prelude::*;
 
 const STYLE_TEMPLATE: &'static str = "
-.osmo-root {
+.kuikka-root {
   margin: 20px;
   color: white;
 }
-.osmo-time {
+.kuikka-time {
   font-size: 80px;
 }
-.osmo-date {
+.kuikka-date {
   font-size: 30px;
 }
 ";
@@ -23,27 +23,27 @@ const STYLE_TEMPLATE: &'static str = "
 type Coord = (i32, i32);
 type DateTime = chrono::DateTime<chrono::Local>;
 
-struct OsmoTimeGui {
+struct KuikkaTimeGui {
     container: gtk::Box,
     time: gtk::Label,
     date: gtk::Label,
 }
 
-impl OsmoTimeGui {
-    fn new() -> OsmoTimeGui {
+impl KuikkaTimeGui {
+    fn new() -> KuikkaTimeGui {
         // Time and date
         let time_lbl = gtk::Label::new(None);
-        add_class(&time_lbl, "osmo-time");
+        add_class(&time_lbl, "kuikka-time");
         let date_lbl = gtk::Label::new(None);
-        add_class(&date_lbl, "osmo-date");
+        add_class(&date_lbl, "kuikka-date");
 
         // Container
         let container = gtk::Box::new(gtk::Orientation::Vertical, 10);
-        add_class(&container, "osmo-root");
+        add_class(&container, "kuikka-root");
         container.add(&time_lbl);
         container.add(&date_lbl);
 
-        OsmoTimeGui {
+        KuikkaTimeGui {
             container: container,
             time: time_lbl,
             date: date_lbl,
@@ -68,13 +68,13 @@ fn add_class<W: IsA<gtk::Widget> + gtk::WidgetExt>(
     }
 }
 
-fn osmo_window<W: IsA<gtk::Widget>>(
+fn kuikka_window<W: IsA<gtk::Widget>>(
     coord: Coord,
     widget: &W
 ) -> gtk::Window {
     let (x_pos, y_pos) = coord;
     let w = gtk::Window::new(gtk::WindowType::Toplevel);
-    w.set_title("osmo");
+    w.set_title("kuikka");
     w.set_app_paintable(true);
     w.set_type_hint(gdk::WindowTypeHint::Dock);
     w.set_keep_above(true);
@@ -99,10 +99,11 @@ fn load_styles() {
     );
 }
 
-fn main() {
+fn run_gui() {
+    // Init GTK
     if gtk::init().is_err() {
-        println!("Failed to initialize GTK.");
-        return;
+        eprintln!("Failed to initialize GTK.");
+        std::process::exit(1)
     }
 
     // Geometry
@@ -115,13 +116,13 @@ fn main() {
     load_styles();
 
     // GUI
-    let osmo_time_gui = OsmoTimeGui::new();
-    let window = osmo_window(coord, &osmo_time_gui.container);
+    let kuikka_time_gui = KuikkaTimeGui::new();
+    let window = kuikka_window(coord, &kuikka_time_gui.container);
     window.show_all();
 
     // Ticker
     let tick = move || {
-        osmo_time_gui.update_datetime(chrono::Local::now());
+        kuikka_time_gui.update_datetime(chrono::Local::now());
         gtk::Continue(true)
     };
     tick();
@@ -129,4 +130,8 @@ fn main() {
 
     // Kickoff
     gtk::main();
+}
+
+fn main() {
+    run_gui();
 }

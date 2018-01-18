@@ -1,7 +1,7 @@
 [package]
-name = "osmo"
-description = "On-Screen Mini Osmo"
-version = "0.1.0"
+name = "kuikka"
+description = "On-screen display for various things"
+version = "0.0.1"
 authors = ["Jaakko Pallari <jkpl@lepo.group>"]
 
 [dependencies]
