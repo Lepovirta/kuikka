@@ -6,7 +6,6 @@ extern crate chrono;
 
 use gtk::prelude::*;
 use gdk::prelude::*;
-use chrono::Local;
 
 const STYLE_TEMPLATE: &'static str = "
 .osmo-root {
@@ -21,6 +20,85 @@ const STYLE_TEMPLATE: &'static str = "
 }
 ";
 
+type Coord = (i32, i32);
+type DateTime = chrono::DateTime<chrono::Local>;
+
+struct OsmoTimeGui {
+    container: gtk::Box,
+    time: gtk::Label,
+    date: gtk::Label,
+}
+
+impl OsmoTimeGui {
+    fn new() -> OsmoTimeGui {
+        // Time and date
+        let time_lbl = gtk::Label::new(None);
+        add_class(&time_lbl, "osmo-time");
+        let date_lbl = gtk::Label::new(None);
+        add_class(&date_lbl, "osmo-date");
+
+        // Container
+        let container = gtk::Box::new(gtk::Orientation::Vertical, 10);
+        add_class(&container, "osmo-root");
+        container.add(&time_lbl);
+        container.add(&date_lbl);
+
+        OsmoTimeGui {
+            container: container,
+            time: time_lbl,
+            date: date_lbl,
+        }
+    }
+
+    fn update_datetime(&self, dt: DateTime) {
+        let time = format!("{}", dt.format("%H:%M"));
+        let date = format!("{}", dt.format("%Y-%m-%d"));
+        self.time.set_text(&time);
+        self.date.set_text(&date);
+    }
+}
+
+fn add_class<W: IsA<gtk::Widget> + gtk::WidgetExt>(
+    widget: &W,
+    class: &str
+) {
+    match widget.get_style_context() {
+        Some(ctx) => ctx.add_class(class),
+        None => eprintln!("Failed to get style context to add class {}", class),
+    }
+}
+
+fn osmo_window<W: IsA<gtk::Widget>>(
+    coord: Coord,
+    widget: &W
+) -> gtk::Window {
+    let (x_pos, y_pos) = coord;
+    let w = gtk::Window::new(gtk::WindowType::Toplevel);
+    w.set_title("osmo");
+    w.set_app_paintable(true);
+    w.set_type_hint(gdk::WindowTypeHint::Dock);
+    w.set_keep_above(true);
+    w.move_(x_pos, y_pos);
+    w.stick();
+    w.add(widget);
+    w.connect_delete_event(|_, _| {
+        gtk::main_quit();
+        Inhibit(false)
+    });
+    w
+}
+
+fn load_styles() {
+    let styles = gtk::CssProvider::new();
+    styles.load_from_data(STYLE_TEMPLATE.as_bytes()).unwrap();
+    let screen = gdk::Screen::get_default().unwrap();
+    gtk::StyleContext::add_provider_for_screen(
+        &screen,
+        &styles,
+        gtk::STYLE_PROVIDER_PRIORITY_FALLBACK
+    );
+}
+
 fn main() {
     if gtk::init().is_err() {
         println!("Failed to initialize GTK.");
@@ -31,59 +109,24 @@ fn main() {
     let display = gdk::Display::get_default().unwrap();
     let monitor = display.get_primary_monitor().unwrap();
     let geometry = monitor.get_geometry();
-    let x_pos = geometry.width / 8;
-    let y_pos = geometry.height / 8;
+    let coord = (geometry.width / 8, geometry.height / 8);
 
     // Style
-    let styles = gtk::CssProvider::new();
-    styles.load_from_data(STYLE_TEMPLATE.as_bytes()).unwrap();
-    let screen = gdk::Screen::get_default().unwrap();
-    gtk::StyleContext::add_provider_for_screen(
-        &screen,
-        &styles,
-        gtk::STYLE_PROVIDER_PRIORITY_FALLBACK
-    );
+    load_styles();
 
-    // Window
-    let window = gtk::Window::new(gtk::WindowType::Toplevel);
-    window.set_title("osmo");
-    window.set_app_paintable(true);
-    window.set_type_hint(gdk::WindowTypeHint::Dock);
-    window.set_keep_above(true);
-    window.move_(x_pos, y_pos);
-
-    // Clock
-    let time_lbl = gtk::Label::new(None);
-    time_lbl.get_style_context().unwrap().add_class("osmo-time");
-
-    // Date
-    let date_lbl = gtk::Label::new(None);
-    date_lbl.get_style_context().unwrap().add_class("osmo-date");
-
-    // Container
-    let container = gtk::Box::new(gtk::Orientation::Vertical, 10);
-    container.get_style_context().unwrap().add_class("osmo-root");
-    container.add(&time_lbl);
-    container.add(&date_lbl);
-    window.add(&container);
+    // GUI
+    let osmo_time_gui = OsmoTimeGui::new();
+    let window = osmo_window(coord, &osmo_time_gui.container);
+    window.show_all();
 
     // Ticker
     let tick = move || {
-        let time = format!("{}", Local::now().format("%H:%M"));
-        let date = format!("{}", Local::now().format("%Y-%m-%d"));
-        time_lbl.set_text(&time);
-        date_lbl.set_text(&date);
+        osmo_time_gui.update_datetime(chrono::Local::now());
         gtk::Continue(true)
     };
     tick();
     gtk::timeout_add_seconds(1, tick);
 
     // Kickoff
-    window.connect_delete_event(|_, _| {
-        gtk::main_quit();
-        Inhibit(false)
-    });
-    window.show_all();
-
     gtk::main();
 }
